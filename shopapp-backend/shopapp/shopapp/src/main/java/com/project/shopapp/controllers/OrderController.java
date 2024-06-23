@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("${api.prefix}/orders")
-public class OrderCtrl {
+public class OrderController {
     @PostMapping("")
     public ResponseEntity<?> createOrder(
             @RequestBody @Valid OrderDTO orderDTO,
