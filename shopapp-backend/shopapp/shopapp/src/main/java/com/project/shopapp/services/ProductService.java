@@ -10,6 +10,7 @@ import com.project.shopapp.exceptions.InvalidParamException;
 import com.project.shopapp.repositories.CategoryRepo;
 import com.project.shopapp.repositories.ProductImageRepo;
 import com.project.shopapp.repositories.ProductRepo;
+import com.project.shopapp.responses.ProductResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -40,18 +41,20 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Product getProductById(long id) throws Exception {
+    public Product getProductById(Long id) throws Exception {
         return productRepo.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
     }
 
     @Override
-    public Page<Product> getAllProducts(PageRequest pageRequest) {
-        return productRepo.findAll(pageRequest);
+    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
+        return productRepo
+                .findAll(pageRequest)
+                .map(ProductResponse::fromProduct);
     }
 
     @Override
-    public Product updateProduct(long id, ProductDTO productDTO) throws Exception {
+    public Product updateProduct(Long id, ProductDTO productDTO) throws Exception {
         Product existingProduct = getProductById(id);
         if (existingProduct != null) {
             Category existingCategory = categoryRepo.findById(productDTO.getCategoryId())
@@ -67,7 +70,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public void deleteProduct(long id) {
+    public void deleteProduct(Long id) {
         Optional<Product> optionalProduct = productRepo.findById(id);
         optionalProduct.ifPresent(productRepo::delete);
     }

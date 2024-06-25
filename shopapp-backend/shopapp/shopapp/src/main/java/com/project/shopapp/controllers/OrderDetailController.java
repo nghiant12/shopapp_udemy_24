@@ -1,40 +1,70 @@
 package com.project.shopapp.controllers;
 
 import com.project.shopapp.dtos.OrderDetailDTO;
+import com.project.shopapp.entities.OrderDetail;
+import com.project.shopapp.repositories.OrderDetailRepo;
+import com.project.shopapp.responses.OrderDetailResponse;
+import com.project.shopapp.services.IOrderDetailService;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("${api.prefix}/order_details")
+@RequiredArgsConstructor
 public class OrderDetailController {
+    private final IOrderDetailService orderDetailService;
+    private final OrderDetailRepo orderDetailRepo;
+
     @PostMapping
     public ResponseEntity<?> createOrderDetail(@Valid @RequestBody OrderDetailDTO orderDetailDTO) {
-        return ResponseEntity.ok("createOrderDetail here");
+        try {
+            OrderDetail newOrderDetail = orderDetailService.createOrderDetail(orderDetailDTO);
+            return ResponseEntity.ok(OrderDetailResponse.fromOrderDetail(newOrderDetail));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getOrderDetail(@Valid @PathVariable("id") Long id) {
-        return ResponseEntity.ok("getOrderDetail with id: " + id);
+    public ResponseEntity<?> findById(@PathVariable("id") Long id) {
+        try {
+            OrderDetail orderDetail = orderDetailService.findById(id);
+            return ResponseEntity.ok(OrderDetailResponse.fromOrderDetail(orderDetail));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/order/{orderId}")
-    public ResponseEntity<?> getOrderDetails(@Valid @PathVariable("orderId") Long orderId) {
-        return ResponseEntity.ok("getOrderDetails with orderId: " + orderId);
+    public ResponseEntity<?> findByOrderId(@PathVariable("orderId") Long orderId) {
+        List<OrderDetail> orderDetails = orderDetailService.findByOrderId(orderId);
+        List<OrderDetailResponse> orderDetailResponses =
+                orderDetails.stream().map(OrderDetailResponse::fromOrderDetail).toList();
+        return ResponseEntity.ok(orderDetailResponses);
     }
 
     @PutMapping("/{id}")
     public ResponseEntity<?> updateOrderDetail(
             @Valid @PathVariable("id") Long id,
-            @RequestBody OrderDetailDTO newOrderDetailData
+            @RequestBody OrderDetailDTO orderDetailDTO
     ) {
-        return ResponseEntity.ok("updateOrderDetail with id: " + id + ", newOrderDetailData: " + newOrderDetailData);
+        try {
+            OrderDetail newOrderDetailData = orderDetailService.updateOrderDetail(id, orderDetailDTO);
+            return ResponseEntity.ok(OrderDetailResponse.fromOrderDetail(newOrderDetailData));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrderDetail(
-            @Valid @PathVariable("id") Long id
+            @PathVariable("id") Long id
     ) {
-        return ResponseEntity.noContent().build();
+        orderDetailService.deleteById(id);
+        return ResponseEntity.ok().body("Delete order detail with id: " + id + "successfully");
     }
 }

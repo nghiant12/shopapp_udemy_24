@@ -1,8 +1,9 @@
 package com.project.shopapp.controllers;
 
+import com.github.javafaker.Faker;
 import com.project.shopapp.dtos.CategoryDTO;
 import com.project.shopapp.entities.Category;
-import com.project.shopapp.services.CategoryService;
+import com.project.shopapp.services.ICategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CategoryController {
 
-    private final CategoryService categoryService;
+    private final ICategoryService categoryService;
 
     //Hiển thị tất cả các danh mục sản phẩm
     @GetMapping
@@ -54,5 +55,23 @@ public class CategoryController {
     public ResponseEntity<String> deleteCategory(@PathVariable Long id) {
         categoryService.deleteCategory(id);
         return ResponseEntity.ok("Delete category with id: " + id + " successfully");
+    }
+
+//    @PostMapping("/generateFakeCategories")
+//    public ResponseEntity<String> generateFakeCategories() {
+    private ResponseEntity<String> generateFakeCategories() {
+        Faker faker = new Faker();
+        for (int i = 0; i < 100; i++) {
+            String categoryName = faker.commerce().department();
+            CategoryDTO categoryDTO = CategoryDTO.builder()
+                    .name(categoryName)
+                    .build();
+            try {
+                categoryService.createCategory(categoryDTO);
+            } catch (Exception e) {
+                return ResponseEntity.badRequest().body(e.getMessage());
+            }
+        }
+        return ResponseEntity.ok("Fake categories created successfully");
     }
 }

@@ -5,7 +5,6 @@ import com.project.shopapp.entities.Category;
 import com.project.shopapp.repositories.CategoryRepo;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -24,7 +23,7 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public Category getCategoryById(long id) {
+    public Category getCategoryById(Long id) {
         return categoryRepo.findById(id)
                 .orElseThrow(() -> new RuntimeException("Category not found"));
     }
@@ -35,14 +34,14 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public void updateCategory(long categoryId, CategoryDTO categoryDTO) {
+    public void updateCategory(Long categoryId, CategoryDTO categoryDTO) {
         Category existingCategory = getCategoryById(categoryId);
         existingCategory.setName(categoryDTO.getName());
         categoryRepo.save(existingCategory);
     }
 
     @Override
-    public void deleteCategory(long id) {
+    public void deleteCategory(Long id) {
         categoryRepo.deleteById(id);
     }
 }

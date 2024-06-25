@@ -3,8 +3,8 @@ package com.project.shopapp.entities;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.sql.Date;
-import java.time.LocalDateTime;
+import java.time.LocalDate;
+import java.util.Date;
 
 @Data
 @Getter
@@ -39,11 +39,13 @@ public class Order {
     @Column(name = "note", length = 100)
     private String note;
 
+    @Column(name = "order_date")
     private Date orderDate;
 
     @Column(name = "status")
     private String status;
 
+    @Column(name = "total_money")
     private Float totalMoney;
 
     @Column(name = "shipping_method", length = 100)
@@ -53,9 +55,9 @@ public class Order {
     private String shippingAddress;
 
     @Column(name = "shipping_date")
-    private LocalDateTime shippingDate;
+    private LocalDate shippingDate;
 
-    @Column(name = "tracking_method", length = 100)
+    @Column(name = "tracking_number", length = 100)
     private String trackingNumber;
 
     @Column(name = "payment_method", length = 100)
