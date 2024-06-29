@@ -46,7 +46,7 @@ public class OrderService implements IOrderService {
     }
 
     @Override
-    public Order updateOrder(Long id, OrderDTO orderDTO) throws Exception {
+    public OrderResponse updateOrder(Long id, OrderDTO orderDTO) throws Exception {
         Order order = orderRepo.findById(id)
                 .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
         User existingUser = userRepo.findById(orderDTO.getUserId())
@@ -55,13 +55,15 @@ public class OrderService implements IOrderService {
                 .addMappings(mapper -> mapper.skip(Order::setId));
         modelMapper.map(orderDTO, order);
         order.setUser(existingUser);
-        return orderRepo.save(order);
+        orderRepo.save(order);
+        modelMapper.typeMap(Order.class, OrderResponse.class);
+        return modelMapper.map(order, OrderResponse.class);
     }
 
     @Override
-    public Order findById(Long id) throws Exception {
-        return orderRepo.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
+    public OrderResponse findById(Long id) throws Exception {
+        return OrderResponse.fromOrder(orderRepo.findById(id)
+                .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id)));
     }
 
     @Override

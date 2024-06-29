@@ -58,6 +58,7 @@ public class OrderResponse {
 
     public static OrderResponse fromOrder(Order order) {
         return OrderResponse.builder()
+                .id(order.getId())
                 .userId(order.getUser().getId())
                 .fullName(order.getFullName())
                 .email(order.getEmail())

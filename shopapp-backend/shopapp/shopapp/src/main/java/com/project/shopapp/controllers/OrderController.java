@@ -54,8 +54,8 @@ public class OrderController {
     // GET http://localhost:8088/api/v1/orders/2
     public ResponseEntity<?> findById(@Valid @PathVariable("id") Long orderId) {
         try {
-            Order existingOrder = orderService.findById(orderId);
-            return ResponseEntity.ok(OrderResponse.fromOrder(existingOrder));
+            OrderResponse orderResponse = orderService.findById(orderId);
+            return ResponseEntity.ok(orderResponse);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -69,8 +69,8 @@ public class OrderController {
             @Valid @RequestBody OrderDTO orderDTO
     ) {
         try {
-            Order order = orderService.updateOrder(id, orderDTO);
-            return ResponseEntity.ok(OrderResponse.fromOrder(order));
+            OrderResponse orderResponse = orderService.updateOrder(id, orderDTO);
+            return ResponseEntity.ok(orderResponse);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
