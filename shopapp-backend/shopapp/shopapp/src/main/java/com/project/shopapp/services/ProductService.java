@@ -47,7 +47,7 @@ public class ProductService implements IProductService {
     }
 
     @Override
-    public Page<ProductResponse> getAllProducts(PageRequest pageRequest) {
+    public Page<ProductResponse> getProducts(PageRequest pageRequest) {
         return productRepo
                 .findAll(pageRequest)
                 .map(ProductResponse::fromProduct);

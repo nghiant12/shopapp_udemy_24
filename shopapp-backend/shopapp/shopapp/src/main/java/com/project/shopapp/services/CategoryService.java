@@ -3,7 +3,11 @@ package com.project.shopapp.services;
 import com.project.shopapp.dtos.CategoryDTO;
 import com.project.shopapp.entities.Category;
 import com.project.shopapp.repositories.CategoryRepo;
+import com.project.shopapp.responses.CategoryListResponse;
+import com.project.shopapp.responses.CategoryResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -15,11 +19,11 @@ public class CategoryService implements ICategoryService {
     private final CategoryRepo categoryRepo;
 
     @Override
-    public void createCategory(CategoryDTO categoryDTO) {
+    public Category createCategory(CategoryDTO categoryDTO) {
         Category newCategory = Category.builder()
                 .name(categoryDTO.getName())
                 .build();
-        categoryRepo.save(newCategory);
+        return categoryRepo.save(newCategory);
     }
 
     @Override
@@ -29,15 +33,15 @@ public class CategoryService implements ICategoryService {
     }
 
     @Override
-    public List<Category> getAllCategories() {
-        return categoryRepo.findAll();
+    public Page<CategoryResponse> getCategories(PageRequest pageRequest) {
+        return categoryRepo.findAll(pageRequest).map(CategoryResponse::fromCategory);
     }
 
     @Override
-    public void updateCategory(Long categoryId, CategoryDTO categoryDTO) {
+    public Category updateCategory(Long categoryId, CategoryDTO categoryDTO) {
         Category existingCategory = getCategoryById(categoryId);
         existingCategory.setName(categoryDTO.getName());
-        categoryRepo.save(existingCategory);
+        return categoryRepo.save(existingCategory);
     }
 
     @Override

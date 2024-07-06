@@ -13,7 +13,7 @@ public interface IProductService {
 
     Product getProductById(Long id) throws Exception;
 
-    Page<ProductResponse> getAllProducts(PageRequest pageRequest);
+    Page<ProductResponse> getProducts(PageRequest pageRequest);
 
     Product updateProduct(Long id, ProductDTO productDTO) throws Exception;
 

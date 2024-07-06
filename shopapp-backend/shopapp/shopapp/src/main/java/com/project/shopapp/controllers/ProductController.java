@@ -1,15 +1,17 @@
 package com.project.shopapp.controllers;
 
 import com.github.javafaker.Faker;
+import com.project.shopapp.components.LocalizationUtil;
 import com.project.shopapp.dtos.ProductDTO;
 import com.project.shopapp.dtos.ProductImageDTO;
 import com.project.shopapp.entities.Product;
 import com.project.shopapp.entities.ProductImage;
-import com.project.shopapp.responses.ProductListResponse;
-import com.project.shopapp.responses.ProductResponse;
+import com.project.shopapp.responses.*;
 import com.project.shopapp.services.IProductService;
+import com.project.shopapp.utils.MessageKeys;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.UrlResource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -37,9 +39,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class ProductController {
     private final IProductService productService;
+    private final LocalizationUtil util;
 
     @PostMapping("")
-    public ResponseEntity<?> createProduct(
+    public ResponseEntity<CreateProductResponse> createProduct(
             @Valid
             @RequestBody ProductDTO productDTO,
             BindingResult result
@@ -50,14 +53,18 @@ public class ProductController {
                         .stream()
                         .map(FieldError::getDefaultMessage)
                         .toList();
-                return ResponseEntity.badRequest().body(errMessages);
+                return ResponseEntity.badRequest().body(CreateProductResponse.builder()
+                        .message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, errMessages)).build());
             }
 
             Product newProduct = productService.createProduct(productDTO);
 
-            return ResponseEntity.ok(newProduct);
+            return ResponseEntity.ok(CreateProductResponse.builder()
+                    .message(util.getMessage(MessageKeys.CREATE_PRODUCT_SUCCESSFULLY))
+                    .product(newProduct).build());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(CreateProductResponse.builder()
+                    .message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, e.getMessage())).build());
         }
     }
 
@@ -70,7 +77,8 @@ public class ProductController {
             Product existingProduct = productService.getProductById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
             if (files.size() > ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
-                return ResponseEntity.badRequest().body("You can only upload maximum 5 files");
+                return ResponseEntity.badRequest().body(UploadProductImageResponse.builder()
+                        .message(MessageKeys.ERROR_MAX_5_IMAGES).build());
             }
             List<ProductImage> productImages = new ArrayList<>();
             for (MultipartFile file : files) {
@@ -79,11 +87,13 @@ public class ProductController {
                 }
                 // kiểm tra kích thước file và định dạng
                 if (file.getSize() > 10 * 1024 * 1024) { //kích thước > 10MB
-                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body("File is too large! Maximum size is 10MB");
+                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                            .body(UploadProductImageResponse.builder().message(MessageKeys.FILE_LARGE).build());
                 }
                 String contentType = file.getContentType();
                 if (contentType == null || !contentType.startsWith("image/")) {
-                    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body("File must be an image");
+                    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                            .body(UploadProductImageResponse.builder().message(MessageKeys.FILE_MUST_BE_IMAGE).build());
                 }
                 String filename = storeFile(file);
                 ProductImage productImage = productService.createProductImage(
@@ -93,7 +103,7 @@ public class ProductController {
                                 .build());
                 productImages.add(productImage);
             }
-            return ResponseEntity.ok().body(productImages);
+            return ResponseEntity.ok(productImages);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());
         }
@@ -102,6 +112,22 @@ public class ProductController {
     private boolean isImageFile(MultipartFile file) {
         String contentType = file.getContentType();
         return contentType != null && contentType.startsWith("images/");
+    }
+
+    @GetMapping("/images/{imageName}")
+    public ResponseEntity<?> viewsImage(@PathVariable String imageName) {
+        try {
+            Path imagePath = Paths.get("uploads/" + imageName);
+            UrlResource urlResource = new UrlResource(imagePath.toUri());
+
+            if (urlResource.exists()) {
+                return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(urlResource);
+            } else {
+                return ResponseEntity.notFound().build();
+            }
+        } catch (Exception e) {
+            return ResponseEntity.notFound().build();
+        }
     }
 
     private String storeFile(MultipartFile file) throws IOException {
@@ -130,7 +156,7 @@ public class ProductController {
             @RequestParam("limit") int limit
     ) {
         PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("createdAt").descending());
-        Page<ProductResponse> productPage = productService.getAllProducts(pageRequest);
+        Page<ProductResponse> productPage = productService.getProducts(pageRequest);
         int totalPages = productPage.getTotalPages();
         List<ProductResponse> products = productPage.getContent();
         return ResponseEntity.ok(ProductListResponse.builder()
@@ -153,9 +179,32 @@ public class ProductController {
     public ResponseEntity<String> deleteProduct(@PathVariable long id) {
         try {
             productService.deleteProduct(id);
-            return ResponseEntity.status(HttpStatus.OK).body(String.format("Product with id = %d deleted successfully", id));
+            return ResponseEntity.status(HttpStatus.OK).body(util.getMessage(MessageKeys.DELETE_PRODUCT_SUCCESSFULLY));
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(e.getMessage());
+            return ResponseEntity.badRequest().body(util.getMessage(MessageKeys.DELETE_PRODUCT_FAILED, e.getMessage()));
+        }
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UpdateProductResponse> updateProduct(
+            @PathVariable long id,
+            @Valid @RequestBody ProductDTO productDTO, BindingResult result
+    ) {
+        try {
+            if (result.hasErrors()) {
+                List<String> errMessages = result.getFieldErrors()
+                        .stream()
+                        .map(FieldError::getDefaultMessage)
+                        .toList();
+                return ResponseEntity.badRequest().body(UpdateProductResponse.builder()
+                        .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, errMessages)).build());
+            }
+            Product product = productService.updateProduct(id, productDTO);
+            return ResponseEntity.ok(UpdateProductResponse.builder()
+                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_SUCCESSFULLY)).product(product).build());
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(UpdateProductResponse.builder()
+                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, e.getMessage())).build());
         }
     }
 

@@ -1,10 +1,12 @@
 package com.project.shopapp.controllers;
 
+import com.project.shopapp.components.LocalizationUtil;
 import com.project.shopapp.dtos.OrderDetailDTO;
 import com.project.shopapp.entities.OrderDetail;
 import com.project.shopapp.repositories.OrderDetailRepo;
 import com.project.shopapp.responses.OrderDetailResponse;
 import com.project.shopapp.services.IOrderDetailService;
+import com.project.shopapp.utils.MessageKeys;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,7 +19,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OrderDetailController {
     private final IOrderDetailService orderDetailService;
-    private final OrderDetailRepo orderDetailRepo;
+    private final LocalizationUtil util;
 
     @PostMapping
     public ResponseEntity<?> createOrderDetail(@Valid @RequestBody OrderDetailDTO orderDetailDTO) {
@@ -65,6 +67,6 @@ public class OrderDetailController {
             @PathVariable("id") Long id
     ) {
         orderDetailService.deleteById(id);
-        return ResponseEntity.ok().body("Delete order detail with id: " + id + "successfully");
+        return ResponseEntity.ok().body(util.getMessage(MessageKeys.DELETE_ORDER_DETAIL_SUCCESSFULLY));
     }
 }
