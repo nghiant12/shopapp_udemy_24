@@ -8,6 +8,7 @@ import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.repositories.OrderDetailRepo;
 import com.project.shopapp.repositories.OrderRepo;
 import com.project.shopapp.repositories.ProductRepo;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -21,29 +22,20 @@ public class OrderDetailService implements IOrderDetailService {
     private final ProductRepo productRepo;
 
     @Override
+    @Transactional
     public OrderDetail createOrderDetail(OrderDetailDTO orderDetailDTO) throws Exception {
-        Order order = orderRepo.findById(orderDetailDTO.getOrderId())
-                .orElseThrow(() -> new DataNotFoundException("Order not found"));
-        Product product = productRepo.findById(orderDetailDTO.getProductId())
-                .orElseThrow(() -> new DataNotFoundException("Product not found"));
-        OrderDetail orderDetail = OrderDetail.builder()
-                .order(order)
-                .product(product)
-                .price(orderDetailDTO.getPrice())
-                .numberOfProducts(orderDetailDTO.getNumberOfProducts())
-                .totalMoney(orderDetailDTO.getTotalMoney())
-                .color(orderDetailDTO.getColor())
-                .build();
+        Order order = orderRepo.findById(orderDetailDTO.getOrderId()).orElseThrow(() -> new DataNotFoundException("Order not found"));
+        Product product = productRepo.findById(orderDetailDTO.getProductId()).orElseThrow(() -> new DataNotFoundException("Product not found"));
+        OrderDetail orderDetail = OrderDetail.builder().order(order).product(product).price(orderDetailDTO.getPrice()).numberOfProducts(orderDetailDTO.getNumberOfProducts()).totalMoney(orderDetailDTO.getTotalMoney()).color(orderDetailDTO.getColor()).build();
         return orderDetailRepo.save(orderDetail);
     }
 
     @Override
+    @Transactional
     public OrderDetail updateOrderDetail(Long id, OrderDetailDTO orderDetailDTO) throws Exception {
         OrderDetail existingOrderDetail = findById(id);
-        Order existingOrder = orderRepo.findById(orderDetailDTO.getOrderId())
-                .orElseThrow(() -> new DataNotFoundException("Order not found"));
-        Product existingProduct = productRepo.findById(orderDetailDTO.getProductId())
-                .orElseThrow(() -> new DataNotFoundException("Product not found"));
+        Order existingOrder = orderRepo.findById(orderDetailDTO.getOrderId()).orElseThrow(() -> new DataNotFoundException("Order not found"));
+        Product existingProduct = productRepo.findById(orderDetailDTO.getProductId()).orElseThrow(() -> new DataNotFoundException("Product not found"));
         existingOrderDetail.setOrder(existingOrder);
         existingOrderDetail.setProduct(existingProduct);
         existingOrderDetail.setPrice(orderDetailDTO.getPrice());
@@ -54,6 +46,7 @@ public class OrderDetailService implements IOrderDetailService {
     }
 
     @Override
+    @Transactional
     public void deleteById(Long id) {
         orderDetailRepo.deleteById(id);
     }

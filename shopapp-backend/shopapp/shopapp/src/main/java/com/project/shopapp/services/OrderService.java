@@ -8,9 +8,9 @@ import com.project.shopapp.exceptions.DataNotFoundException;
 import com.project.shopapp.repositories.OrderRepo;
 import com.project.shopapp.repositories.UserRepo;
 import com.project.shopapp.responses.OrderResponse;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -22,13 +22,12 @@ import java.util.List;
 public class OrderService implements IOrderService {
     private final OrderRepo orderRepo;
     private final UserRepo userRepo;
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
 
     @Override
+    @Transactional
     public OrderResponse createOrder(OrderDTO orderDTO) throws Exception {
-        User user = userRepo.findById(orderDTO.getUserId())
-                .orElseThrow(() -> new DataNotFoundException("Cannot find user with id: " + orderDTO.getUserId()));
+        User user = userRepo.findById(orderDTO.getUserId()).orElseThrow(() -> new DataNotFoundException("Cannot find user with id: " + orderDTO.getUserId()));
         // convert orderDTO -> order
         Order order = modelMapper.map(orderDTO, Order.class);
         order.setUser(user);
@@ -46,13 +45,11 @@ public class OrderService implements IOrderService {
     }
 
     @Override
+    @Transactional
     public OrderResponse updateOrder(Long id, OrderDTO orderDTO) throws Exception {
-        Order order = orderRepo.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
-        User existingUser = userRepo.findById(orderDTO.getUserId())
-                .orElseThrow(() -> new DataNotFoundException("Cannot find user with id: " + orderDTO.getUserId()));
-        modelMapper.typeMap(OrderDTO.class, Order.class)
-                .addMappings(mapper -> mapper.skip(Order::setId));
+        Order order = orderRepo.findById(id).orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id));
+        User existingUser = userRepo.findById(orderDTO.getUserId()).orElseThrow(() -> new DataNotFoundException("Cannot find user with id: " + orderDTO.getUserId()));
+        modelMapper.typeMap(OrderDTO.class, Order.class).addMappings(mapper -> mapper.skip(Order::setId));
         modelMapper.map(orderDTO, order);
         order.setUser(existingUser);
         orderRepo.save(order);
@@ -62,11 +59,11 @@ public class OrderService implements IOrderService {
 
     @Override
     public OrderResponse findById(Long id) throws Exception {
-        return OrderResponse.fromOrder(orderRepo.findById(id)
-                .orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id)));
+        return OrderResponse.fromOrder(orderRepo.findById(id).orElseThrow(() -> new DataNotFoundException("Cannot find product with id: " + id)));
     }
 
     @Override
+    @Transactional
     public void deleteOrder(Long id) {
         Order order = orderRepo.findById(id).orElse(null);
         if (order != null) {

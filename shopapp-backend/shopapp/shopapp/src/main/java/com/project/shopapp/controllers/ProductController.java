@@ -29,10 +29,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.UUID;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("${api.prefix}/products")
@@ -42,43 +40,28 @@ public class ProductController {
     private final LocalizationUtil util;
 
     @PostMapping("")
-    public ResponseEntity<CreateProductResponse> createProduct(
-            @Valid
-            @RequestBody ProductDTO productDTO,
-            BindingResult result
-    ) {
+    public ResponseEntity<CreateProductResponse> createProduct(@Valid @RequestBody ProductDTO productDTO, BindingResult result) {
         try {
             if (result.hasErrors()) {
-                List<String> errMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
-                return ResponseEntity.badRequest().body(CreateProductResponse.builder()
-                        .message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, errMessages)).build());
+                List<String> errMessages = result.getFieldErrors().stream().map(FieldError::getDefaultMessage).toList();
+                return ResponseEntity.badRequest().body(CreateProductResponse.builder().message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, errMessages)).build());
             }
 
             Product newProduct = productService.createProduct(productDTO);
 
-            return ResponseEntity.ok(CreateProductResponse.builder()
-                    .message(util.getMessage(MessageKeys.CREATE_PRODUCT_SUCCESSFULLY))
-                    .product(newProduct).build());
+            return ResponseEntity.ok(CreateProductResponse.builder().message(util.getMessage(MessageKeys.CREATE_PRODUCT_SUCCESSFULLY)).product(newProduct).build());
         } catch (Exception e) {
-            return ResponseEntity.badRequest().body(CreateProductResponse.builder()
-                    .message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, e.getMessage())).build());
+            return ResponseEntity.badRequest().body(CreateProductResponse.builder().message(util.getMessage(MessageKeys.CREATE_PRODUCT_FAILED, e.getMessage())).build());
         }
     }
 
     @PostMapping(value = "uploads/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    public ResponseEntity<?> uploadImages(
-            @ModelAttribute("files") List<MultipartFile> files,
-            @PathVariable("id") Long productId
-    ) {
+    public ResponseEntity<?> uploadImages(@ModelAttribute("files") List<MultipartFile> files, @PathVariable("id") Long productId) {
         try {
             Product existingProduct = productService.getProductById(productId);
             files = files == null ? new ArrayList<MultipartFile>() : files;
             if (files.size() > ProductImage.MAXIMUM_IMAGES_PER_PRODUCT) {
-                return ResponseEntity.badRequest().body(UploadProductImageResponse.builder()
-                        .message(MessageKeys.ERROR_MAX_5_IMAGES).build());
+                return ResponseEntity.badRequest().body(UploadProductImageResponse.builder().message(MessageKeys.ERROR_MAX_5_IMAGES).build());
             }
             List<ProductImage> productImages = new ArrayList<>();
             for (MultipartFile file : files) {
@@ -87,20 +70,14 @@ public class ProductController {
                 }
                 // kiểm tra kích thước file và định dạng
                 if (file.getSize() > 10 * 1024 * 1024) { //kích thước > 10MB
-                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
-                            .body(UploadProductImageResponse.builder().message(MessageKeys.FILE_LARGE).build());
+                    return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).body(UploadProductImageResponse.builder().message(MessageKeys.FILE_LARGE).build());
                 }
                 String contentType = file.getContentType();
                 if (contentType == null || !contentType.startsWith("image/")) {
-                    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                            .body(UploadProductImageResponse.builder().message(MessageKeys.FILE_MUST_BE_IMAGE).build());
+                    return ResponseEntity.status(HttpStatus.UNSUPPORTED_MEDIA_TYPE).body(UploadProductImageResponse.builder().message(MessageKeys.FILE_MUST_BE_IMAGE).build());
                 }
                 String filename = storeFile(file);
-                ProductImage productImage = productService.createProductImage(
-                        existingProduct.getId(),
-                        ProductImageDTO.builder()
-                                .imageUrl(filename)
-                                .build());
+                ProductImage productImage = productService.createProductImage(existingProduct.getId(), ProductImageDTO.builder().imageUrl(filename).build());
                 productImages.add(productImage);
             }
             return ResponseEntity.ok(productImages);
@@ -119,11 +96,12 @@ public class ProductController {
         try {
             Path imagePath = Paths.get("uploads/" + imageName);
             UrlResource urlResource = new UrlResource(imagePath.toUri());
-
             if (urlResource.exists()) {
                 return ResponseEntity.ok().contentType(MediaType.IMAGE_JPEG).body(urlResource);
             } else {
-                return ResponseEntity.notFound().build();
+                return ResponseEntity.ok()
+                        .contentType(MediaType.IMAGE_JPEG)
+                        .body(new UrlResource(Paths.get("uploads/notfound.gif").toUri()));
             }
         } catch (Exception e) {
             return ResponseEntity.notFound().build();
@@ -150,19 +128,35 @@ public class ProductController {
         return uniqueFilename;
     }
 
-    @GetMapping("")
+    @GetMapping
     public ResponseEntity<ProductListResponse> getProducts(
-            @RequestParam("page") int page,
-            @RequestParam("limit") int limit
+            @RequestParam(defaultValue = "") String keyword,
+            @RequestParam(defaultValue = "0", name = "category_id") Long categoryId,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "9") int limit
     ) {
-        PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("createdAt").descending());
-        Page<ProductResponse> productPage = productService.getProducts(pageRequest);
+        PageRequest pageRequest = PageRequest.of(page, limit, Sort.by("id").ascending());
+        Page<ProductResponse> productPage = productService.getProducts(keyword, categoryId, pageRequest);
         int totalPages = productPage.getTotalPages();
         List<ProductResponse> products = productPage.getContent();
-        return ResponseEntity.ok(ProductListResponse.builder()
+        return ResponseEntity.ok(ProductListResponse
+                .builder()
                 .products(products)
                 .totalPages(totalPages)
                 .build());
+    }
+
+    @GetMapping("/by-ids")
+    public ResponseEntity<?> getProductsByIds(@RequestParam String ids) {
+        try {
+            List<Long> productsIds = Arrays.stream(ids.split(","))
+                    .map(Long::parseLong)
+                    .collect(Collectors.toList());
+            List<Product> products = productService.findProductsByIds(productsIds);
+            return ResponseEntity.ok(products);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     @GetMapping("/{id}")
@@ -188,23 +182,24 @@ public class ProductController {
     @PutMapping("/{id}")
     public ResponseEntity<UpdateProductResponse> updateProduct(
             @PathVariable long id,
-            @Valid @RequestBody ProductDTO productDTO, BindingResult result
+            @Valid @RequestBody ProductDTO productDTO,
+            BindingResult result
     ) {
         try {
             if (result.hasErrors()) {
-                List<String> errMessages = result.getFieldErrors()
-                        .stream()
-                        .map(FieldError::getDefaultMessage)
-                        .toList();
+                List<String> errMessages = result.getFieldErrors().stream().map(FieldError::getDefaultMessage).toList();
                 return ResponseEntity.badRequest().body(UpdateProductResponse.builder()
-                        .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, errMessages)).build());
+                        .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, errMessages))
+                        .build());
             }
             Product product = productService.updateProduct(id, productDTO);
             return ResponseEntity.ok(UpdateProductResponse.builder()
-                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_SUCCESSFULLY)).product(product).build());
+                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_SUCCESSFULLY))
+                    .product(product).build());
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(UpdateProductResponse.builder()
-                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, e.getMessage())).build());
+                    .message(util.getMessage(MessageKeys.UPDATE_PRODUCT_FAILED, e.getMessage()))
+                    .build());
         }
     }
 
@@ -217,13 +212,7 @@ public class ProductController {
             if (productService.existsByName(productName)) {
                 continue;
             }
-            ProductDTO productDTO = ProductDTO.builder()
-                    .name(productName)
-                    .price((float) faker.number().numberBetween(10, 9000000))
-                    .description(faker.lorem().sentence())
-                    .thumbnail("")
-                    .categoryId((long) faker.number().numberBetween(1, 100))
-                    .build();
+            ProductDTO productDTO = ProductDTO.builder().name(productName).price((float) faker.number().numberBetween(10, 9000000)).description(faker.lorem().sentence()).thumbnail("").categoryId((long) faker.number().numberBetween(1, 100)).build();
             try {
                 productService.createProduct(productDTO);
             } catch (Exception e) {
