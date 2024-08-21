@@ -66,7 +66,7 @@ public class UserService implements IUserService {
     }
 
     @Override
-    public String login(String phoneNumber, String password) throws Exception {
+    public String login(String phoneNumber, String password, Long roleId) throws Exception {
         Optional<User> optionalUser = userRepo.findByPhoneNumber(phoneNumber);
         if (optionalUser.isEmpty()) {
             throw new DataNotFoundException(util.getMessage(MessageKeys.WRONG_PHONE_PASSWORD));
@@ -80,11 +80,11 @@ public class UserService implements IUserService {
                 throw new BadCredentialsException(util.getMessage(MessageKeys.WRONG_PHONE_PASSWORD));
             }
         }
-        Optional<Role> optionalRole = roleRepo.findById(user.getRole().getId());
-        if (optionalRole.isEmpty()) {
+        Optional<Role> optionalRole = roleRepo.findById(roleId);
+        if (optionalRole.isEmpty() || !roleId.equals(optionalRole.get().getId())) {
             throw new DataNotFoundException(util.getMessage(MessageKeys.ROLE_DOES_NOT_EXIST));
         }
-        if (optionalUser.get().isActive()) {
+        if (!optionalUser.get().isActive()) {
             throw new DataNotFoundException(util.getMessage(MessageKeys.USER_IS_LOCKED));
         }
         UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
@@ -93,5 +93,19 @@ public class UserService implements IUserService {
         );
         authenticationManager.authenticate(authenticationToken);
         return jwtTokenUtil.generateToken(user);
+    }
+
+    @Override
+    public User getUserDetailsFromToken(String token) throws Exception {
+        if (jwtTokenUtil.isTokenExpired(token)) {
+            throw new Exception("Token is expired");
+        }
+        String phoneNumber = jwtTokenUtil.extractPhoneNumber(token);
+        Optional<User> user = userRepo.findByPhoneNumber(phoneNumber);
+        if (user.isPresent()) {
+            return user.get();
+        } else {
+            throw new Exception("User not found");
+        }
     }
 }

@@ -1,12 +1,14 @@
 package com.project.shopapp.responses;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.project.shopapp.dtos.OrderDTO;
+import com.project.shopapp.dtos.CartItemDTO;
 import com.project.shopapp.entities.Order;
+import com.project.shopapp.entities.OrderDetail;
 import lombok.*;
 
 import java.util.Date;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 @Getter
@@ -56,6 +58,9 @@ public class OrderResponse {
     @JsonProperty("tracking_number")
     private String trackingNumber;
 
+    @JsonProperty("order_details")
+    private List<OrderDetail> orderDetails;
+
     public static OrderResponse fromOrder(Order order) {
         return OrderResponse.builder()
                 .id(order.getId())
@@ -73,6 +78,7 @@ public class OrderResponse {
                 .shippingDate(order.getShippingDate())
                 .paymentMethod(order.getPaymentMethod())
                 .trackingNumber(order.getTrackingNumber())
+                .orderDetails(order.getOrderDetails())
                 .build();
     }
 }

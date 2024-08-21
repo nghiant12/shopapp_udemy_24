@@ -55,9 +55,9 @@ public class OrderController {
 
     @GetMapping("/{id}")
     // GET http://localhost:8088/api/v1/orders/2
-    public ResponseEntity<?> findById(@Valid @PathVariable("id") Long orderId) {
+    public ResponseEntity<?> getOrder(@Valid @PathVariable("id") Long orderId) {
         try {
-            OrderResponse orderResponse = orderService.findById(orderId);
+            OrderResponse orderResponse = orderService.getOrder(orderId);
             return ResponseEntity.ok(orderResponse);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(e.getMessage());

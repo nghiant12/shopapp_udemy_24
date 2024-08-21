@@ -63,9 +63,9 @@ public class WebSecurityConfig {
                             .requestMatchers(DELETE,
                                     String.format("%s/products/**", apiPrefix)).hasRole(Role.ADMIN)
                             .requestMatchers(POST,
-                                    String.format("%s/orders/**", apiPrefix)).hasRole(Role.USER)
+                                    String.format("%s/orders**", apiPrefix)).hasRole(Role.USER)
                             .requestMatchers(GET,
-                                    String.format("%s/orders**", apiPrefix)).permitAll()
+                                    String.format("%s/orders/**", apiPrefix)).permitAll()
                             .requestMatchers(PUT,
                                     String.format("%s/orders/**", apiPrefix)).hasRole(Role.ADMIN)
                             .requestMatchers(DELETE,
@@ -73,7 +73,7 @@ public class WebSecurityConfig {
                             .requestMatchers(POST,
                                     String.format("%s/order_details/**", apiPrefix)).hasRole(Role.USER)
                             .requestMatchers(GET,
-                                    String.format("%s/order_details**", apiPrefix)).permitAll()
+                                    String.format("%s/order_details/**", apiPrefix)).permitAll()
                             .requestMatchers(PUT,
                                     String.format("%s/order_details/**", apiPrefix)).hasRole(Role.ADMIN)
                             .requestMatchers(DELETE,

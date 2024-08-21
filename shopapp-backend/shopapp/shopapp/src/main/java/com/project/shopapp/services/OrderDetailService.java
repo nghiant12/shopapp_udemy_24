@@ -26,7 +26,13 @@ public class OrderDetailService implements IOrderDetailService {
     public OrderDetail createOrderDetail(OrderDetailDTO orderDetailDTO) throws Exception {
         Order order = orderRepo.findById(orderDetailDTO.getOrderId()).orElseThrow(() -> new DataNotFoundException("Order not found"));
         Product product = productRepo.findById(orderDetailDTO.getProductId()).orElseThrow(() -> new DataNotFoundException("Product not found"));
-        OrderDetail orderDetail = OrderDetail.builder().order(order).product(product).price(orderDetailDTO.getPrice()).numberOfProducts(orderDetailDTO.getNumberOfProducts()).totalMoney(orderDetailDTO.getTotalMoney()).color(orderDetailDTO.getColor()).build();
+        OrderDetail orderDetail = OrderDetail.builder()
+                .order(order).product(product)
+                .price(orderDetailDTO.getPrice())
+                .numberOfProducts(orderDetailDTO.getNumberOfProducts())
+                .totalMoney(orderDetailDTO.getTotalMoney())
+                .color(orderDetailDTO.getColor())
+                .build();
         return orderDetailRepo.save(orderDetail);
     }
 
