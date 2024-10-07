@@ -11,6 +11,11 @@ public class MessageKeys {
     public static final String REGISTER_FAILED = "user.register.register_failed";
     public static final String PASSWORD_NOT_MATCHED = "user.register.password_not_matched";
 
+    public static final String INVALID_TOKEN = "token.invalid";
+    public static final String TOKEN_VALIDATION_FAILED = "token.validation.failed";
+    public static final String TOKEN_EXPIRED = "token.expired";
+    public static final String TOKEN_CREATION_FAILED = "token.creation.failed";
+
     public static final String CREATE_CATEGORY_SUCCESSFULLY = "category.create_category.create_successfully";
     public static final String CREATE_CATEGORY_FAILED = "category.create_category.create_failed";
     public static final String UPDATE_CATEGORY_SUCCESSFULLY = "category.update_category.update_successfully";

@@ -29,10 +29,11 @@ public class JwtTokenUtil {
     private String secretKey;
 
     public String generateToken(User user) throws Exception {
-        //properties -> claims
+        // properties -> claims
         Map<String, Object> claims = new HashMap<>();
-//        this.generateSecretKey();
         claims.put("phoneNumber", user.getPhoneNumber());
+        claims.put("user_id", user.getId()); // Thêm user_id vào claims
+
         try {
             String token = Jwts.builder()
                     .setClaims(claims)
@@ -44,6 +45,10 @@ public class JwtTokenUtil {
         } catch (Exception e) {
             throw new InvalidParamException("Cannot create jwt token, error: " + e.getMessage());
         }
+    }
+
+    public Long extractUserId(String token) {
+        return extractClaim(token, claims -> claims.get("user_id", Long.class));
     }
 
     private Key getSignInKey() {

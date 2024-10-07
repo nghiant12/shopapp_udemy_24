@@ -100,12 +100,13 @@ public class UserService implements IUserService {
         if (jwtTokenUtil.isTokenExpired(token)) {
             throw new Exception("Token is expired");
         }
-        String phoneNumber = jwtTokenUtil.extractPhoneNumber(token);
-        Optional<User> user = userRepo.findByPhoneNumber(phoneNumber);
+        String phoneNumber = jwtTokenUtil.extractPhoneNumber(token); // Trích xuất user_id
+        Optional<User> user = userRepo.findByPhoneNumber(phoneNumber); // Tìm user bằng user_id
         if (user.isPresent()) {
             return user.get();
         } else {
             throw new Exception("User not found");
         }
     }
+
 }
